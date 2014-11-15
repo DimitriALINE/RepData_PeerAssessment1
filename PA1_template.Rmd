@@ -1,0 +1,118 @@
+---
+title: "Activity"
+output: html_document
+---
+
+### Loading and preprocessing the data
+
+The code loads the data and gives a class and a name to the columns.
+```{r, echo=TRUE}
+setwd("C:/Users/dimitri/datasciencecoursera/RepData_PeerAssessment1")
+unzip("activity.zip")
+data <- read.csv("activity.csv", header = TRUE, colClasses = c("numeric", "Date","numeric"))
+head(data)
+```
+
+### What is mean total number of steps taken per day?
+
+```{r, echo=TRUE}
+##Construction of a database without missing values.
+y <- complete.cases(data)
+data2 <- data[y,]
+## Calculation of the average number of steps taken per day.
+x <- lapply((split(data2$steps,data2$date)),sum)
+```
+**Histogram of the total number of steps taken each day.**
+```{r, echo=TRUE}
+x <- as.numeric(x)
+hist(x, main = "Total number of steps taken each day", xlab = "Steps" )
+```
+
+**Calculation of the mean total number of steps taken each day.**
+```{r, echo=TRUE}
+mean(x)
+```
+
+**Calculation of the median total number of steps taken each day.**
+```{r, echo=TRUE}
+median(x)
+```
+
+### What is the average daily activity pattern?
+
+```{r, echo=TRUE}
+## Construction of the vector with every 5 minutes interval in a day.
+x <- data$interval[1:288]
+## Calculation of the average number of steps taken in a 5 minutes interval, averaged across all days.
+y <- lapply((split(data2$steps,data2$interval)),mean)
+y <- as.numeric(y)
+```
+
+**Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis).**
+```{r, echo=TRUE}
+plot(x,y, type = "l", main = "Average daily activity", xlab ="Hours (500 means 05:00)" , ylab = "Average steps taken in 5 min")
+```
+
+**8:35 is the 5-minute interval when on average across all the days in the dataset, contains the maximum number of steps (206.2).**
+```{r, echo=TRUE}
+names(y) <- x
+y[y==max(y)]
+```
+
+### Imputing missing values
+
+**Calculation of the  total number of missing values in the dataset.**
+```{r, echo=TRUE}
+sum(is.na(data))
+```
+Where are the missing values?
+```{r, echo=TRUE}
+sapply((lapply((split(data$steps,data$date)),is.na)),sum)
+```
+
+There are missing value in only 8 days, and every values of these days are missing.
+The following code chunk replaces the missing values of these 8 days by the mean for the corresponding 5-minute interval.
+```{r, echo=TRUE}
+X <- rep (y, 61)
+##Creation of new dataset that is equal to the original dataset but with the missing data filled in.
+for (i in 1:17568) {if (is.na(data[i,1]) == TRUE) {data[i,1] <- X[i]}}
+```
+
+**Histogram of the total number of steps taken each day.**
+```{r, echo=TRUE}
+## Calculation of the average number of steps taken per day.
+z <- lapply((split(data$steps,data$date)),sum)
+z <- as.numeric(z)
+hist(z, main = "Total number of steps taken each day", xlab = "Steps")
+```
+
+**Calculation of the mean total number of steps taken each day.**
+```{r, echo=TRUE}
+mean(z)
+```
+
+**Calculation of the median total number of steps taken each day.**
+```{r, echo=TRUE}
+median(z)
+```
+**The mean is the same compared to the mean when we ignored the missing values. However the median is slightly higher.The impact of imputing missing datas is that there are 8 more days which have a number of steps corresponding to the mean.**
+
+### Are there differences in activity patterns between weekdays and weekends?
+```{r, echo=TRUE}
+## Creation of a new factor variable in the dataset with two levels - "weekday" and "weekend"
+day <- weekdays(data$date)
+for (i in 1:17568) {if ((day[i] == "Sunday")|(day[i] == "Saturday")) {day[i] <- "weekend"} else {day[i] <- "weekday"}}
+data <- cbind(data,day)
+## Calculation of the average number of steps taken in a 5 minutes interval, averaged across all weekday days.
+g <- lapply((split(data[data$day == "weekday",1],data[data$day == "weekday",3])),mean)
+## Calculation of the average number of steps taken in a 5 minutes interval, averaged across all weekend days.
+h <- lapply((split(data[data$day == "weekend",1],data[data$day == "weekend",3])),mean)
+```
+
+**Panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).**
+```{r, echo=TRUE}
+par(mfrow = c(2,1))
+plot(x,g,type = "l", main = "weekday",xlab ="Hours (500 means 05:00)" , ylab = "Average steps taken in 5 min",ylim = c(0,220), cex.axis = 0.6,cex.lab = 0.8)
+plot(x,h,type = "l", main = "weekend",xlab ="Hours (500 means 05:00)" , ylab = "Average steps taken in 5 min",ylim = c(0,220), cex.axis = 0.6, cex.lab = 0.8)
+```
+
